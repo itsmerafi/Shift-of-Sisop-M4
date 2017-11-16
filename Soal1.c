@@ -8,111 +8,47 @@
 #include <errno.h>
 #include <sys/time.h>
 
-static const char *dirpath = "/home/itsmerafi/Downloads";
+static const char *dirpath = "/home/droppledev/Documents";
 
 static int xmp_getattr(const char *path, struct stat *stbuf)
 {
-  int res;
-  char fpath[1000];
-  char newFile[100];
- // printf("path   : %s, len: %d\n", path, strlen(path));
-  if (strcmp(path, "/") != 0) {
-    memcpy(newFile, path, strlen(path) - 4);
-    newFile[strlen(path) - 4] = '\0';
-  } else {
-    memcpy(newFile, path, strlen(path));
-  }
-  printf("newFile: %s\n", newFile);
-  sprintf(fpath,"%s%s",dirpath, newFile);
-  res = lstat(fpath, stbuf);
+    char filepath[500];
+    int res1308;
+    sprintf(filepath,"%s%s",dirpath,path);
+    res1308 = lstat(filepath, stbuf);
+    if(res1308 == -1){
+        return -errno;
+    }
 
-  if (res == -1)
-    return -errno;
-
-  return 0;
+    return 0;
 }
-
-static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
- 	      off_t offset, struct fuse_file_info *fi)
+static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,off_t offset, struct fuse_file_info *fi)
 {
- char fpath[1000];
-  if(strcmp(path,"/") == 0)
-  {
-    path=dirpath;
-    sprintf(fpath,"%s",path);
-  }
-  else sprintf(fpath, "%s%s",dirpath,path);
-  int res = 0;
+    char filepath[500];
+    if(strcmp(path,"/") == 0){
+        path=dirpath;
+        sprintf(filepath,"%s",path);
+    }
+    else sprintf(filepath, "%s%s",dirpath,path);
+    DIR *dp;
+    struct dirent *de;
 
-  DIR *dp;
-  struct dirent *de;
+    (void) offset;
+    (void) fi;
 
-  (void) offset;
-  (void) fi;
+    dp = opendir(filepath);
+    if (dp == NULL)
+        return -errno;
 
-  dp = opendir(fpath);
-  if (dp == NULL)
-    return -errno;
-
-  while ((de = readdir(dp)) != NULL) {
-    char *newName;
-    newName = strcat(de->d_name, ".bak");
-    struct stat st;
-    memset(&st, 0, sizeof(st));
-    st.st_ino = de->d_ino;
-    st.st_mode = de->d_type << 12;
-    res = (filler(buf, newName, &st, 0));
-      if(res!=0) break;
-  }
-
-  closedir(dp);
-  return 0;
+    while ((de = readdir(dp)) != NULL) {
+        struct stat st;
+        memset(&st, 0, sizeof(st));
+        st.st_ino = de->d_ino;
+        st.st_mode = de->d_type << 12;
+        if (filler(buf, de->d_name, &st, 0))
+            break;
+        }
+                                          
+        closedir(dp);
+        return 0;
 }
-
-static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
- 	   struct fuse_file_info *fi)
-{
-  char fpath[1000];
-  char newFile[100];
-  if(strcmp(path,"/") == 0)
-  {
-    memcpy(newFile, path, strlen(path));
-    path=dirpath;
-    sprintf(fpath,"%s",newFile);
-  }
-  else {
-    memcpy(newFile, path, strlen(path) - 4);
-    newFile[strlen(path) - 4] = '\0';
-
-    sprintf(fpath, "%s%s",dirpath,newFile);
-  }
-  int res = 0;
-  int fd = 0 ;
-
-  (void) fi;
-  fd = open(fpath, O_RDONLY);
-  if (fd == -1)
-    return -errno;
-
-  res = pread(fd, buf, size, offset);
-  if (res == -1)
-    res = -errno;
-
-  close(fd);
-  return res;
-}
-
-static struct fuse_operations xmp_oper = {
-  .getattr  = xmp_getattr,
-  .readdir  = xmp_readdir,
-  .read   = xmp_read,
-};
-
-int main(int argc, char *argv[])
-{
-  umask(0);
-  return fuse_main(argc, argv, &xmp_oper, NULL);
-}
-
-
-
