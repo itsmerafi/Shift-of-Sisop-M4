@@ -237,3 +237,8 @@ static struct fuse_operations fuso_oper =
     .write = fuso_write,
     .open = fuso_open,
 };
+
+int main(int argc, char *argv[])
+{
+    return fuse_main(argc, argv, &fuso_oper);
+} 
