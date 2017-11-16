@@ -137,3 +137,103 @@ static int fuso_mknod(const char *path, mode_t mode, dev_t rdev)
 
     return 0;
 }
+
+
+static int fuso_read(const char *path, char *buf, size_t size, off_t offset)
+{
+    int fd;
+    int res1913;
+    char filepath[500];
+    sprintf(filepath,"%s%s", dirpath, path);
+    fd = open(filepath, O_RDONLY);
+    if(fd == -1)
+        return -errno;
+
+    res1913 = pread(fd, buf, size, offset);
+    if(res1913 == -1)
+        res1913 = -errno;
+
+    close(fd);
+    return res1913;
+}
+
+static int fuso_write(const char *path, const char *buf, size_t size,
+                     off_t offset)
+{
+    int fd;    
+    int res1913;
+    char filepath[500];
+    sprintf(filepath,"%s%s", dirpath, path);
+    fd = open(filepath, O_WRONLY);
+    if(fd == -1)
+        return -errno;
+
+    res1913 = pwrite(fd, buf, size, offset);
+    if(res1913 == -1)
+        res1913 = -errno;
+
+    close(fd);
+    return res1913;
+}
+
+static int fuso_rename(const char *from, const char *to)
+{
+    int res1913;
+    char ffrom[500];
+    char fto[500];
+    system("mkdir /home/droppledev/Downloads/simpanan");
+  
+    char directorii[] = "/home/droppledev/Downloads/simpanan";
+    sprintf(ffrom,"%s%s",dirpath,from);
+    sprintf(fto,"%s%s",directorii,to);
+    strcat(fto,".copy");
+    res1913 = rename(ffrom, fto);
+
+    if(res1913 == -1)
+    return -errno;
+
+    return 0;
+}
+static int fuso_open(const char *path, int flags)
+{
+    int res1913;
+    char fpath[500];
+    char path2[500];
+    char path3[500];
+    sprintf(fpath,"%s%s", dirpath, path);
+    sprintf(path2,"%s%s","/home/droppledev/Downloads",path);
+
+    if(strstr(path,".copy") != NULL || strstr(path2,".copy")!=NULL)
+    {
+        sprintf(path3,"%s%s","chmod 444 ",path2);
+        system(path3);
+        char temp[]="zenity --info --text=\"";
+                strcat(temp,"File yang anda buka adalah file hasil salinan. File tidak bisa diubah maupun disalin kembali!");
+                strcat(temp,"\"");
+                system(temp);
+    res1913 = open(fpath, flags);
+    if(res1913 == -1)
+        return -errno;
+    }
+
+    close(res1913);
+    return 0;
+}
+
+
+static struct fuse_operations fuso_oper =
+{
+    .getattr = fuso_getattr,
+    .getdir = fuso_getdir,
+    .mknod = fuso_mknod,
+    .mkdir = fuso_mkdir,
+    .symlink = fuso_symlink,
+    .unlink = fuso_unlink,
+    .rename = fuso_rename,
+    .chmod = fuso_chmod,
+    .chown = fuso_chown,
+    .truncate = fuso_truncate,
+    .read = fuso_read,
+    .write = fuso_write,
+    .open = fuso_open,
+};
