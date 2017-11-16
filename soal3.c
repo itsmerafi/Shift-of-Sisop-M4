@@ -155,3 +155,59 @@ static int fuso_read(const char *path, char *buf, size_t size, off_t offset)
     close(fd);
     return res1913;
 }
+
+
+static int fuso_write(const char *path, const char *buf, size_t size,
+                     off_t offset)
+{
+    int fd;    
+    int res1913;
+    char filepath[500];
+    sprintf(filepath,"%s%s", dirpath, path);
+    fd = open(filepath, O_WRONLY);
+    if(fd == -1)
+        return -errno;
+
+    res1913 = pwrite(fd, buf, size, offset);
+    if(res1913 == -1)
+        res1913 = -errno;
+
+    close(fd);
+    return res1913;
+}
+
+static int fuso_rename(const char *from, const char *to)
+{
+    int res1913;
+    char ffrom[500];
+    char fto[500];
+    system("mkdir /home/droppledev/Downloads/simpanan");
+  
+    char directorii[] = "/home/droppledev/Downloads/simpanan";
+
+    sprintf(ffrom,"%s%s",dirpath,from);
+    sprintf(fto,"%s%s",directorii,to);
+    res1913 = rename(ffrom, fto);
+
+    if(res1913 == -1)
+    return -errno;
+
+    return 0;
+}
+
+static struct fuse_operations fuso_oper =
+{
+    .getattr = fuso_getattr,
+    .getdir = fuso_getdir,
+    .mknod = fuso_mknod,
+    .mkdir = fuso_mkdir,
+    .symlink = fuso_symlink,
+    .unlink = fuso_unlink,
+    .rename = fuso_rename,
+    .chmod = fuso_chmod,
+    .chown = fuso_chown,
+    .truncate = fuso_truncate,
+    .read = fuso_read,
+    .write = fuso_write,
+};
+
